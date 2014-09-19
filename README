@@ -1,0 +1,4 @@
+Simple file change metrics pulled from vcs repo.
+
+To run tests, execute ./runtests.sh
+
