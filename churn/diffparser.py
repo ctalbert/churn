@@ -10,33 +10,44 @@ class DiffParserError(Exception):
 
 
 class DiffParser(object):
-    def __init__(self, repo_location, repo_type = "hg"):
-        self.hash = {}
-        self.current_diff = ''
+    def __init__(self, repo_type = "hg"):        
+        self.hash = {} # Hash is our final copy holding only diffs that are complete
+        self.current_diff = {} # self.current_diff is in-process parsing
+        self.current_cset = '' # Current cset we are parsing
         self.file_reading_mode = False
         self.repo_type = repo_type
-        if not os.path.exists(repo_location):
-            raise DiffParserError("Repo Location does not exist: %s" % repo_location)
-        self.repo_location = repo_location
-    
+
     def parse(self, input):
         if self.repo_type == "hg":
-            self.parse_hg(input)
+            self._parse_hg(input)
         else:
             raise DiffParserError("Cannot yet parse repo type: %s" % self.repo_type)
-        return self.hash
+        return self.get_parsed_diffs()
 
-    def parse_hg(self, input):
+    def _parse_hg(self, input):
         chgsetRE = re.compile('(^changeset: +)(.*)')
         usernameRE = re.compile('(^user: +)(.*)')
         summaryRE = re.compile('^summary: ')
         summarylineRE = re.compile('.*d* files changed, d*')
-
+        #print "DIFFPARSR INPUT: %s" % input
         for line in input:
+            if line == '':
+                continue
+
             if self.file_reading_mode:
                 # Then we are reading files until we find a summary line
                 if summarylineRE.match(line):
-                    self.current_diff = ''
+                    # For the final hash, we store in format:
+                    # { 
+                    #   '<chgsetID>': { '<file1>': <lines_changed>,
+                    #                   '<file2>': <lines_changed>,
+                    #                    .....
+                    #                 },
+                    #   '<chgsetID>': {...},
+                    # }                    
+                    self.hash.update(self.current_diff)
+                    self.current_cset = ''
+                    self.current_diff = {}
                     self.file_reading_mode = False
                     continue
                 else:
@@ -49,32 +60,32 @@ class DiffParser(object):
                     # Make sure we have the line we're expecting
                     if fileline[1] != '|':
                         raise DiffParserError('Invalid file line detected: %s' % line)
-
-                    # store in format:
-                    # { 
-                    #   '<chgsetID>': { '<file1>': <lines_changed>,
-                    #                   '<file2>': <lines_changed>,
-                    #                    .....
-                    #                 },
-                    # }
-                    self.hash[self.current_diff][fileline[0]] = int(fileline[2])
+                    
+                    self.current_diff[self.current_cset][fileline[0]] = int(fileline[2])
                     continue
 
-            if self.current_diff == '':
+            if self.current_cset == '':
                 m = chgsetRE.match(line)
                 if m:
-                    self.current_diff = m.group(2).split(':')[1]
-                    self.hash[self.current_diff] = {}
+                    self.current_cset = m.group(2).split(':')[1]
+                    self.current_diff[self.current_cset] = {}
                     continue
             else:
                 m = usernameRE.match(line)
                 if m:
-                    self.hash[self.current_diff]['user'] = m.group(2)
+                    self.current_diff[self.current_cset]['user'] = m.group(2)
                     continue
 
                 if summaryRE.match(line):
                     self.file_reading_mode = True
                     continue
 
-       
+
+    def get_parsed_diffs(self):
+        # Returns the self.hash list of parsed items if there is anything in it
+        # (it only contains fully parsed diffs)
+        if len(self.hash) > 0:
+            return self.hash
+        else:
+            return None       
 

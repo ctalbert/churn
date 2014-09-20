@@ -67,4 +67,7 @@ class ChurnHash(object):
             if f == '/':
                 f = ''
 
+    def get_hash(self):
+        return self.hash
+
 

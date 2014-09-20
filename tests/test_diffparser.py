@@ -70,7 +70,7 @@ summary:     Bug 1061489: Move Bluedroid code out of BluetoothInterface.{cpp,h},
 
 class TestDiffParser(unittest.TestCase):
     def test_simple_diff(self):
-        dp = DiffParser(os.getcwd())
+        dp = DiffParser()
         diffinfo = dp.parse(onefilechange.split('\n'))
         correct_info = {'diffs':['d1cfe5bf9a56'], 
                         'd1cfe5bf9a56': {'files': ['b2g/config/gaia.json']}}
@@ -78,7 +78,7 @@ class TestDiffParser(unittest.TestCase):
         self.assertEqual(diffinfo['d1cfe5bf9a56']['b2g/config/gaia.json'], 2)
   
     def test_multifile_diff(self):
-        dp = DiffParser(os.getcwd())
+        dp = DiffParser()
         diffinfo = dp.parse(multiplefilechange.split('\n'))
         correct_info = {'diffs': ['e2e2e6397253'],
                         'e2e2e6397253': {'files': [
@@ -98,7 +98,7 @@ class TestDiffParser(unittest.TestCase):
         self.assertEqual(diffinfo['e2e2e6397253']['dom/bluetooth/bluedroid/BluetoothHALInterface.cpp'], 3684)
 
     def test_multichange_diff(self):
-        dp = DiffParser(os.getcwd())
+        dp = DiffParser()
         diffinfo = dp.parse(multiplechangediff.split('\n'))
         self.assertEqual(diffinfo['e2e2e6397253']['dom/bluetooth/moz.build'], 5)
         self.assertEqual(diffinfo['8644a9c4b993']['dom/bluetooth/moz.build'], 3)
