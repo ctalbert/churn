@@ -64,9 +64,13 @@ class DiffParser(object):
                     # Make sure we have the line we're expecting
                     if fileline[1] != '|':
                         raise DiffParserError('Invalid file line detected: %s' % line)
-                    
+                    # print fileline
+                    if fileline[2] == 'Bin':
+                        # Binary file detected, skip it
+                        continue 
                     self.current_diff[self.current_cset][fileline[0]] = int(fileline[2])
                     continue
+
 
             if self.current_cset == '':
                 m = chgsetRE.match(line)

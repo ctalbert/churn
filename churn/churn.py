@@ -61,13 +61,17 @@ class ChurnDriver(object):
         
         now = time.time()
         # Wait for 5 seconds with no output
-        while (time.time() - now < 5):
+        count = 0
+        while (time.time() - now < 20):
             if sr.is_empty():
                 print '.',
                 time.sleep(1)
                 continue
 
             lines = sr.readline(0.5)
+            count += 1
+            if count % 100 == 0:
+                print "Read %d lines" % count
             # Got a line of output, reset timer
             now = time.time()
             
@@ -104,3 +108,12 @@ class ChurnDriver(object):
 
         return self._ch
     
+# Since we lack a CLI, you can run this by doing python churn.py and modifying these values below
+# to fit your system. Note that you can change values, run it, change values, run it, etc because
+# it will not delete the database between runs. Just be sure that you are operating on different 
+# segments of the repo's history or else you'll get integrity errors from the database
+churndrv = ChurnDriver(repo_location = '../m-c',
+                       repo_type='hg',
+                       repo_command='hg log --stat -d "2014-07-22 to 2014-09-02" --pager False --no-merges',
+                       date_range='2014-07-22 to 2014-09-02')
+churndrv.run()
