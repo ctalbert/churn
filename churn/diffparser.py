@@ -1,6 +1,7 @@
 import subprocess
 import os.path
 import re
+import datetime
 
 class DiffParserError(Exception):
     def __init__(self, msg):
@@ -27,6 +28,7 @@ class DiffParser(object):
     def _parse_hg(self, input):
         chgsetRE = re.compile('(^changeset: +)(.*)')
         usernameRE = re.compile('(^user: +)(.*)')
+        dateRE = re.compile('(^date: +)(.*)')
         summaryRE = re.compile('^summary: ')
         summarylineRE = re.compile('.*d* files changed, d*')
         #print "DIFFPARSR INPUT: %s" % input
@@ -41,7 +43,9 @@ class DiffParser(object):
                     # { 
                     #   '<chgsetID>': { '<file1>': <lines_changed>,
                     #                   '<file2>': <lines_changed>,
-                    #                    .....
+                    #                   'user': <username>,
+                    #                   'timestamp': <timestamp in utc isoformat>,
+                    #                   '<file3>': ......,
                     #                 },
                     #   '<chgsetID>': {...},
                     # }                    
@@ -76,10 +80,34 @@ class DiffParser(object):
                     self.current_diff[self.current_cset]['user'] = m.group(2)
                     continue
 
+                m = dateRE.match(line)
+                if m:
+                    self.current_diff[self.current_cset]['timestamp'] = self._get_utc_timestamp(m.group(2))
+                    continue
+
                 if summaryRE.match(line):
                     self.file_reading_mode = True
                     continue
 
+
+    def _get_utc_timestamp(self, datestring):
+        # This is crazy because strfptime doesn't support %z
+        utcoffset = datestring[-5:]
+        dt = datetime.datetime.strptime(datestring[:-5].strip(), '%a %b %d %H:%M:%S %Y')
+        isnegative = utcoffset[0] == '-'
+
+        offset_secs = int(utcoffset[1:3]) * 3600 + int(utcoffset[3:5]) * 60
+        td = datetime.timedelta(seconds=offset_secs)
+
+        # We want to add the inverse of the offset to get to UTC.
+        # i.e. for utc -0700 we would add +7 hours to get UTC
+        # i.e. for utc +0300 we would subtract 3 hours to get UTC
+        # This is why timezones are best served with Elijah Craig 18 yr old bourbon
+        if not isnegative:
+            dt = dt - td
+        else:
+            dt = dt + td
+        return dt.isoformat()
 
     def get_parsed_diffs(self):
         # Returns the self.hash list of parsed items if there is anything in it

@@ -8,14 +8,14 @@ class ChurnHashError(Exception):
         return repr(self.value)
 
 
-class PathHash(object):
+class ChurnHash(object):
     '''
-    Just a hash of file paths and churn data associated with that path
+    A hash of file paths and churn data associated with that path.
     '''
     def __init__(self):
-        self.hash = {}
+        self._hash = {}
 
-    def add_entry(self, file_path, lines_changed):
+    def _add_entry(self, file_path, lines_changed):
         if file_path == '':
             raise ChurnHashError("Empty File path being added to FileHash")
 
@@ -23,28 +23,18 @@ class PathHash(object):
         # but different paths will not match could use the file path but then
         # the keys get really unwieldy
         encodedpath = base64.b64encode(file_path)
-        if encodedpath in self.hash:
-            self.hash[encodedpath]['lines_changed'] += lines_changed
+        if encodedpath in self._hash:
+            self._hash[encodedpath]['lines_changed'] += lines_changed
         else:
-            self.hash[encodedpath] = {}
-            self.hash[encodedpath]['file'] = file_path
-            self.hash[encodedpath]['lines_changed'] = lines_changed
-
-    def get_entry(self, file_path):
+            self._hash[encodedpath] = {}
+            self._hash[encodedpath]['file'] = file_path
+            self._hash[encodedpath]['lines_changed'] = lines_changed
+    
+    def _get_entry(self, file_path):
         encodedpath = base64.b64encode(file_path)
-        if encodedpath not in self.hash:
+        if encodedpath not in self._hash:
             raise ChurnHashError("%s not found in FileHash" % file_path)
-        return self.hash[encodedpath]['lines_changed']
-
-
-class ChurnHash(object):
-    '''
-    A hash of directory names and associated churn metrics which also splits
-    out the files and hashes file names and each file's individual churn metrics
-    as well.
-    '''
-    def __init__(self):
-        self.hash = PathHash()
+        return self._hash[encodedpath]['lines_changed']
 
     def add_file_path(self, file_path, lines_changed):
         # This makes the assumption that it is called with fully specified files
@@ -52,10 +42,10 @@ class ChurnHash(object):
         if file_path == '':
             raise ChurnHashError("Empty File path used in ChurnHash add file")
         for pathsnippet in self._path_generator(file_path):
-            self.hash.add_entry(pathsnippet, lines_changed)
+            self._add_entry(pathsnippet, lines_changed)
 
     def get_churn(self, file_path):
-        return self.hash.get_entry(file_path)
+        return self._get_entry(file_path)
 
     def _path_generator(self, file_path):
         f = file_path
@@ -68,6 +58,6 @@ class ChurnHash(object):
                 f = ''
 
     def get_hash(self):
-        return self.hash
+        return self._hash
 
 
