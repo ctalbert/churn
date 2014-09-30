@@ -11,7 +11,7 @@ create_table_stmts = {CHURN_PER_CHGSET_TABLE_NAME: '''CREATE TABLE chgset_churn(
                                            PRIMARY KEY(chgset, filepath))''',
                       CHURN_TABLE_NAME: '''CREATE TABLE aggregate_churn(encodedfile VARCHAR(120), filepath VARCHAR(512),
                                            daterange VARCHAR(50), churn INTEGER,
-                                           PRIMARY KEY(encodedfile))'''}
+                                           PRIMARY KEY(encodedfile, daterange))'''}
 
 TABLE_EXIST_STMT = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
 
@@ -28,7 +28,10 @@ GET_AGGREGATE_VALUE_FROM_ENCODED_FILE = 'SELECT filepath, daterange, churn FROM 
 
 class SQLiteBackend(object):
     def __init__(self, dbname='churndb.sql'):
-        self._dbconn = sqlite3.connect(dbname)
+        if dbname:
+            self._dbconn = sqlite3.connect(dbname)
+        else:
+            self._dbconn = sqlite3.connect('churndb.sql')
         self._verify_tables()
 
     def _run_execute(self, cursor, query, queryparams = None):
@@ -44,6 +47,8 @@ class SQLiteBackend(object):
                 cursor.execute(query)
         except:
             print "Exception during query: %s" % query
+            if queryparams:
+                print "Query Params for this query: %s" % queryparams
             traceback.print_exc()
             cursor.close()
             cursor = None
