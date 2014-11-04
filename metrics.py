@@ -98,11 +98,21 @@ def gather_metrics(ui, repo, *pats, **opts):
     # This is my code to gather what we need for metrics
     state = {'count': 0}
     metrics = {}
+    df = False
+    if opts.get('date'):
+        df = util.matchdate(opts['date'])
     m = scmutil.match(repo[None], pats, opts)
 
     def walker(ctx, fns):
         #import pdb
         #pdb.set_trace()
+
+        # Verify that this change is inside our date
+        # These are passed into the match and walker functions via the opts param
+        # Not sure this is needed, but churn had it, so keeping for now
+        # TODO: Experiment with whether this extra check is necessary
+        if df and not df(ctx.date()[0]): 
+            return
 
         # Create the chgset's object in our tracker
         chgsetID = ctx.hex()
