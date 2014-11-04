@@ -35,7 +35,7 @@ def parse_commit_msg(msg):
     If any of these things cannot be determined, they will be the empty string
     '''
     bugRE = re.compile('.*[b|B]ug (\d{3,15}).*')
-    std_backoutRE = re.compile('.*[backout|backed out|back out] .* ([0-9A-F]{12,12}) .*', re.IGNORECASE)
+    std_backoutRE = re.compile('.*((backout)|(backed out)|(back out)).* ([0-9A-F]{12,12}).*', re.IGNORECASE)
     full_backoutRE = re.compile('.*[b|B]ackout.*')
     reviewerRE = re.compile('.* r=(.*).*', re.IGNORECASE)
     approverRE = re.compile('.* a=(.*).*', re.IGNORECASE)
@@ -55,7 +55,7 @@ def parse_commit_msg(msg):
         # Try to get the backout rev
         m = std_backoutRE.match(msg)
         if m:
-            backout_rev = m.groups()[0]
+            backout_rev = m.groups()[-1]
     m = reviewerRE.match(msg)
     if m:
         reviewer = m.groups()[0]
@@ -157,7 +157,7 @@ def gather_metrics(ui, repo, *pats, **opts):
      _('File to dump JSON data to'), _('FILE'))
     ] + commands.walkopts,
     _("hg metrics [-d DATE] [-r REV] [-f FILE]"),
-    inferrepo=True)
+    )
 def metrics(ui, repo, *pats, **opts):
     '''Dump a bunch of stats about changes in a repo
 
@@ -183,8 +183,6 @@ def metrics(ui, repo, *pats, **opts):
     }
 
     '''
-    import pdb
-    pdb.set_trace()
     info = gather_metrics(ui, repo, *pats, **opts)
     fp = open(opts.get('file'), "w")
     json.dump(info, fp, indent=2)

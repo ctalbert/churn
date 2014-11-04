@@ -4,3 +4,17 @@ To run tests, execute ./runtests.sh
 
 To run it for real: it's still lacking a true CLI script but there are some constants you can modify down at the bottom of churn/churn.py. Fix those to fit your machine, and kick it off. Then go get coffee. :-)
 
+=== Alternative ===
+So, after getting different requirements for metrics, we devised another way to get this data. You can simply install the mercurial extension metrics.py in this repo. To install:
+edit your ~/.hgrc file and add this line beneath the [extensions] group (if you don't have such a group, create one:
+
+[extensions]
+hgext.metrics = <path_to_this_metrics.py>
+
+Once you've done that, go to the repo in question and type:
+hg metrics --help
+
+And you're off to the races. Here's an example:
+
+hg metrics -f foo.json -d "2014-11-03 to 2014-11-04"
+This will build you a foo.json full of data for all changes in this repo over this 24 hour period.
